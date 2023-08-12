@@ -1,0 +1,72 @@
+[
+  {
+    "name": "Sanwich meat",
+    "decription": "Sanwich meat is delicious sanwich",
+    "price": 40,
+    "category": "dishes",
+    "recipes": "meat, vegeteble, flour, sauce",
+    "ingredients": "salt, sugar, oil, pepers, letuces, meat",
+    "discount": 15.6,
+    "brand": "food street"
+  },
+  {
+    "name": "Sanwich bread",
+    "decription": "Sanwich bread is delicious sanwich",
+    "price": 44,
+    "category": "dishes",
+    "recipes": "meat, vegeteble, flour, sauce",
+    "ingredients": "salt, sugar, oil, pepers, letuces, meat",
+    "discount": 13.2,
+    "brand": "Food street"
+  },
+  {
+    "name": "Sanwich cake",
+    "decription": "Sanwich cake is delicious sanwich",
+    "price": 41,
+    "category": "cake",
+    "recipes": "meat, vegeteble, flour, sauce",
+    "ingredients": "salt, sugar, oil, pepers, letuces, meat",
+    "discount": 10.6,
+    "brand": "cake street"
+  },
+  {
+    "name": "Sanwich socola",
+    "decription": "Sanwich socola is delicious sanwich",
+    "price": 49,
+    "category": "cake",
+    "recipes": "meat, vegeteble, flour, sauce",
+    "ingredients": "salt, sugar, oil, pepers, letuces, meat",
+    "discount": 15.6,
+    "brand": "cake street"
+  },
+  {
+    "name": "Ice cream",
+    "decription": "ice cream meat is delicious cream",
+    "price": 20,
+    "category": "sweet",
+    "recipes": "meat, vegeteble, flour, sauce",
+    "ingredients": "salt, sugar, oil, pepers, letuces, meat",
+    "discount": 9.6,
+    "brand": "sweet street"
+  },
+  {
+    "name": "Sweet cake",
+    "decription": "sweet cake is delicious sweet",
+    "price": 26,
+    "category": "sweet",
+    "recipes": "meat, vegeteble, flour, sauce",
+    "ingredients": "salt, sugar, oil, pepers, letuces, meat",
+    "discount": 8.6,
+    "brand": "sweet street"
+  },
+  {
+    "name": "Orange juice",
+    "decription": "orange juice is delicious juice",
+    "price": 10,
+    "category": "juice",
+    "recipes": "meat, vegeteble, flour, sauce",
+    "ingredients": "salt, sugar, oil, pepers, letuces, meat",
+    "discount": 4.6,
+    "brand": "juice street"
+  }
+]
