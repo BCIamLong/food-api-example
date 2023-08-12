@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const validator = require("validator");
 
 const foodsSchema = new mongoose.Schema(
   {
@@ -56,6 +57,7 @@ const foodsSchema = new mongoose.Schema(
     email: {
       type: String,
       trim: true,
+      validate: [validator.isEmail, "Email must have email type"],
     },
     vip: {
       type: Boolean,
