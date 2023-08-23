@@ -70,7 +70,7 @@ const foodsSchema = new mongoose.Schema(
   },
   {
     toJSON: { virtuals: true },
-  }
+  },
 );
 
 foodsSchema.pre("save", function (next) {
@@ -93,6 +93,6 @@ foodsSchema.virtual("Currency").get(function () {
   ];
 });
 
-const Food = new mongoose.model("Food", foodsSchema);
+const Food = mongoose.model("Food", foodsSchema);
 
 module.exports = Food;

@@ -6,13 +6,18 @@ const bcrypt = require("bcrypt");
 const userSchema = new mongoose.Schema({
   name: {
     type: String,
-    required: [true, "User must have a user name"],
+    required: [true, "Please fill your username"],
   },
   email: {
     type: String,
-    required: [true, "User must have an email "],
+    required: [true, "Please fill your email "],
     unique: true,
     validate: [validator.isEmail, "Please fill the valid email"],
+  },
+  role: {
+    type: String,
+    enum: ["user", "admin", "seller"],
+    default: "user",
   },
   password: {
     type: String,
@@ -33,6 +38,11 @@ const userSchema = new mongoose.Schema({
   passwordChangedAt: Date,
   passwordResetToken: String,
   passwordResetTokenTime: Date,
+  active: {
+    type: Boolean,
+    default: true,
+  },
+  reasonDeleteAccount: String,
   // passwordResetTokenTime: {
   //   type: Date,
   //   validate: {
@@ -77,8 +87,15 @@ userSchema.pre("save", async function (next) {
   this.passwordConfirm = undefined;
 
   if (this.isNew) return next();
+  // if(this.passwordResetTokenTime && !this.passwordResetTokenTime >= Date.now()) return next(new AppError('Your token is expired', 401));
 
   this.passwordChangedAt = Date.now() - 1000; //1000 seconds is ensure the timestamp always less than the timestamp of sen JWT when we reset password
+  next();
+});
+
+userSchema.pre(/^find/, function (next) {
+  //Use query pre hooks(middleware) to filter all user has false active out of output
+  this.find({ active: { $ne: false } });
   next();
 });
 

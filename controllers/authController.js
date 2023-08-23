@@ -7,7 +7,7 @@ const AppError = require("../utils/AppError");
 const asyncCatch = require("../utils/asyncCatch");
 const { sendEmail } = require("../utils/email");
 
-const signToken = (user) =>
+const signToken = user =>
   jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
     expiresIn: process.env.JWT_EXPIRES_IN,
   });
@@ -51,7 +51,10 @@ const login = asyncCatch(async (req, res, next) => {
   const check = user?.checkPassword(password, user.password);
   if (!user || !check)
     return next(
-      new AppError("Email or password invalid, please check and try again", 400)
+      new AppError(
+        "Email or password invalid, please check and try again",
+        400,
+      ),
     );
 
   // const token = signToken(user);
@@ -66,13 +69,13 @@ const protect = asyncCatch(async (req, res, next) => {
   //1 check token exits
   if (!req.headers?.authorization?.startsWith("Bearer"))
     return next(
-      new AppError("You don't loggin, please login to get access", 401)
+      new AppError("You don't loggin, please login to get access", 401),
     );
   const token = req.headers.authorization.split(" ")[1];
   console.log(token);
   if (!token)
     return next(
-      new AppError("You don't loggin, please login to get access", 401)
+      new AppError("You don't loggin, please login to get access", 401),
     );
   //2, verify token:change payload, token expires
   const decoded = await promisify(jwt.verify)(token, process.env.JWT_SECRET);
@@ -83,21 +86,37 @@ const protect = asyncCatch(async (req, res, next) => {
     return next(
       new AppError(
         "The user used this token has been deleted or not exists, please signup or contact with us to know detail",
-        401
-      )
+        401,
+      ),
     );
   //4, check password has changed after the token issused?
   if (currentUser.checkPasswordChangeAfter(decoded.iat))
     return next(
       new AppError(
         "User recently change password, please login again to get access",
-        401
-      )
+        401,
+      ),
     );
 
   req.user = currentUser;
   next();
 });
+
+/**
+ *Restrict user to perform not allow action(the action for admin,...) like delete, update, create data, this is also authorization
+ *
+ * @param  {Array} roles - The roles array constain allow role
+ * @returns {Function} middlewareFunction - The middleware function(req, res, next) is a standard of express to execute middleware stack
+ */
+const restrictTo =
+  (...roles) =>
+  (req, res, next) => {
+    if (!roles.includes(req.user.role))
+      return next(
+        new AppError("You don't have permission to perform this action", 403),
+      );
+    next();
+  };
 
 const forgotPassword = asyncCatch(async (req, res, next) => {
   //check email
@@ -106,7 +125,10 @@ const forgotPassword = asyncCatch(async (req, res, next) => {
   const user = await User.findOne({ email });
   if (!user)
     return next(
-      new AppError("Your email is not correct, please check and try again", 403)
+      new AppError(
+        "Your email is not correct, please check and try again",
+        403,
+      ),
     );
   //create token and save token in DB
   const resetToken = user.createResetTokenPwd();
@@ -158,7 +180,7 @@ const updatePassword = asyncCatch(async (req, res, next) => {
   const { currentPassword } = req.body;
   if (!currentPassword)
     return next(
-      new AppError("Please fill your current password to confirm", 400)
+      new AppError("Please fill your current password to confirm", 400),
     );
   const user = await User.findById(req.user._id).select("+password");
   const check = await user.checkPassword(currentPassword, user.password);
@@ -166,8 +188,8 @@ const updatePassword = asyncCatch(async (req, res, next) => {
     return next(
       new AppError(
         "Your password is not correct, please check and try again",
-        403
-      )
+        403,
+      ),
     );
   //check user password, and password confirm
 
@@ -185,4 +207,5 @@ module.exports = {
   forgotPassword,
   resetPassword,
   updatePassword,
+  restrictTo,
 };
