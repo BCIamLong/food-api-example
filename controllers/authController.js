@@ -12,8 +12,19 @@ const signToken = user =>
     expiresIn: process.env.JWT_EXPIRES_IN,
   });
 
+const optionsCookie = {
+  httpOnly: true,
+  expires: new Date(
+    Date.now() + process.env.JWT_COOKIE_EXPIRES_IN * 24 * 60 * 60 * 1000,
+  ),
+};
+
+if (process.env.NODE_ENV === "production") optionsCookie.secure = true;
+
 const sendJWT = (res, statusCode, user) => {
   const token = signToken(user);
+
+  res.cookie("jwt", token, optionsCookie);
 
   res.status(statusCode).json({
     status: "success",
@@ -33,12 +44,16 @@ const signup = asyncCatch(async (req, res, next) => {
     passwordConfirm,
     passwordChangedAt,
   });
-  // const token = signToken(newUser);
+  //send email here when user first be created and to verify
+  const message = `Thank you for singing up ${name}, if you have any question you can contacts with us via foodsweb@gmai.com`;
+  const subject = "You are a member of Foods website";
 
-  // res.status(200).json({
-  //   status: "success",
-  //   token,
-  // });
+  //problem here: if user singup success but now if we send email fails so how can we handle in this case?
+  try {
+    await sendEmail({ email, subject, message });
+  } catch (err) {
+    await sendEmail({ email, subject, message });
+  }
   sendJWT(res, 200, newUser);
 });
 
@@ -57,11 +72,6 @@ const login = asyncCatch(async (req, res, next) => {
       ),
     );
 
-  // const token = signToken(user);
-  // res.status(200).json({
-  //   status: "success",
-  //   token,
-  // });
   sendJWT(res, 200, user);
 });
 
@@ -200,6 +210,72 @@ const updatePassword = asyncCatch(async (req, res, next) => {
   //sen jwt
   sendJWT(res, 200, user);
 });
+/**
+ * Verify email: when user singup but not confirm email so user will be limited access in our app, if user want to access and use more features user must to verify email
+ *
+ * User click verify and send otp code mail to user email in certain time (if greater this time this will expires)
+ *
+ * User can use this OTP to confirm email
+ *
+ *@param {Function} asyncCatch - The async catch funtion wrapper like try catch block
+ *@returns {Function} middlewareFunction - The middleware function
+ */
+const verifyEmail = asyncCatch(async (req, res, next) => {
+  const user = await User.findById(req.user.id);
+  const otp = await user.createVerifyEmailOTP();
+  await user.save({ validateBeforeSave: false });
+  const subject = "Your verify email";
+  const message = `This is otp ${otp} use for verify your email (valid in 3 mins)`;
+  try {
+    await sendEmail({ email: user.email, subject, message });
+    res.status(200).json({
+      status: "success",
+      message: "Sent OTP code to your email",
+    });
+  } catch (err) {
+    user.emailVerifyOTP = undefined;
+    user.emailVerifyOTPTimeout = undefined;
+    user.save({ validateBeforeSave: false });
+  }
+});
+
+/**
+ * When user got OTP code in email user use this to confirm email
+ *
+ * If the OTP is expired user musth to perform verify email action again
+ *@param {Function} asyncCatch - The async catch funtion wrapper like try catch block
+ *@returns {Function} middlewareFunction - The middleware function
+ */
+const confirmEmail = asyncCatch(async (req, res, next) => {
+  const user = await User.findOne({
+    _id: req.params.id,
+    emailVerifyOTPTimeout: { $gt: Date.now() },
+  });
+  if (!user) return next(new AppError("Your OTP code was expires", 401));
+  const { otp } = req.body;
+  if (!otp)
+    return next(
+      new AppError(
+        "Please enter OTP(sent to your email) code to confirm your email",
+        400,
+      ),
+    );
+  const check = await user.checkPassword(otp, user.emailVerifyOTP);
+  if (!check)
+    return next(
+      new AppError("Your OTP is not correct, please check and try again", 400),
+    );
+  user.emailVerify = true;
+  user.emailVerifyOTP = undefined;
+  user.emailVerifyOTPTimeout = undefined;
+  await user.save({ validateBeforeSave: false });
+
+  res.status(201).json({
+    status: "success",
+    message: "Your email was verify",
+  });
+});
+
 module.exports = {
   signup,
   login,
@@ -208,4 +284,6 @@ module.exports = {
   resetPassword,
   updatePassword,
   restrictTo,
+  verifyEmail,
+  confirmEmail,
 };

@@ -2,6 +2,7 @@ const crypto = require("crypto");
 const mongoose = require("mongoose");
 const validator = require("validator");
 const bcrypt = require("bcrypt");
+const AppError = require("../utils/AppError");
 
 const userSchema = new mongoose.Schema({
   name: {
@@ -43,6 +44,13 @@ const userSchema = new mongoose.Schema({
     default: true,
   },
   reasonDeleteAccount: String,
+  emailVerify: {
+    type: Boolean,
+    default: false,
+  },
+  emailVerifyOTP: String,
+  emailVerifyOTPTimeout: Date,
+
   // passwordResetTokenTime: {
   //   type: Date,
   //   validate: {
@@ -78,16 +86,27 @@ userSchema.methods.createResetTokenPwd = function () {
 
   return resetToken;
 };
+userSchema.methods.createVerifyEmailOTP = async function () {
+  const otp = `${Math.floor(1000 + Math.random() * 9000)}`;
+
+  this.emailVerifyOTP = await bcrypt.hash(otp, 12);
+  this.emailVerifyOTPTimeout = Date.now() + 3 * 60 * 1000;
+  return otp;
+};
 
 //notice validate in schema and pre hooks save not apply for update,...
 //--> so to do that: we  can use save() to update
 userSchema.pre("save", async function (next) {
+  if (this.emailVerifyOTPTimeout && this.emailVerifyOTPTimeout < Date.now())
+    return next(new AppError("Your OTP is expired", 401));
   if (!this.isModified("password")) return next();
   this.password = await bcrypt.hash(this.password, 12);
   this.passwordConfirm = undefined;
 
   if (this.isNew) return next();
   // if(this.passwordResetTokenTime && !this.passwordResetTokenTime >= Date.now()) return next(new AppError('Your token is expired', 401));
+  if (this.passwordResetTokenTime && this.passwordResetTokenTime < Date.now())
+    return next(new AppError("Your reset password token is expired", 401));
 
   this.passwordChangedAt = Date.now() - 1000; //1000 seconds is ensure the timestamp always less than the timestamp of sen JWT when we reset password
   next();
